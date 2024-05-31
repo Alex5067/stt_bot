@@ -2,8 +2,9 @@ import pymorphy2
 import torch
 from pytorch_pretrained_bert import BertTokenizer, BertForMaskedLM
 
+
 class Bert_punctuation:
-    def __init__(self, model_file = "bert_punctuation.tar.gz", vocab_file = "vocab.txt"):
+    def __init__(self, model_file="bert_punctuation.tar.gz", vocab_file="vocab.txt"):
         self.model_file = model_file
         self.vocab_file = vocab_file
         self.model = self.bert_model()
@@ -14,7 +15,7 @@ class Bert_punctuation:
         return model
 
     def bert_tokenizer(self):
-        tokenizer = BertTokenizer.from_pretrained(self.vocab_file, do_lower_case = True)
+        tokenizer = BertTokenizer.from_pretrained(self.vocab_file, do_lower_case=True)
         return tokenizer
 
     def what_mask(self, text):
@@ -39,32 +40,34 @@ class Bert_punctuation:
             predictions = self.model(tokens_tensor, segments_tensors)
         predictsx1 = []
         for i in range(len(mask_input)):
-            predictsx1.append(predictions[0,mask_input[i],:])
+            predictsx1.append(predictions[0, mask_input[i], :])
             predicts1 = predictsx1[i].argsort()[-8:].numpy()
             out1 = self.tokenizer.convert_ids_to_tokens(predicts1)
         output = []
         a = len(mask_input)
         for i in range(a):
             if predictsx1[i][w_i] > predictsx1[i][w_j]:
-                output.append(i+1)
+                output.append(i + 1)
         return output
 
     def predict(self, texts):
         words_all = texts
-        par_b = [['стар','млад'],  ['жив','мертв'],  ['день','ночь']]
+        par_b = [['стар', 'млад'], ['жив', 'мертв'], ['день', 'ночь']]
         sens = []
         morph = pymorphy2.MorphAnalyzer()
         for i, words in enumerate(words_all):
             words = words.strip().lower()
-            choice_list = words.replace('–','-').replace('—','-').replace(',',' ,').replace('.',' .').replace('!',' !').replace('?',' ?').replace(':',' :').replace(';',' ;').replace('»',' »').replace('«','« ').split()
+            choice_list = (words.replace('–', '-').replace('—', '-').replace(',', ' ,').replace('.', ' .')
+                           .replace('!', ' !').replace('?', ' ?').replace(':', ' :').replace(';', ' ;')
+                           .replace('»', ' »').replace('«', '« ').split())
             pos = ([str(morph.parse(ok)[0].tag.POS) for ok in choice_list])
             case = ([str(morph.parse(ok)[0].tag.case) for ok in choice_list])
             all_cases = ([morph.parse(ok) for ok in choice_list])
-            for j, p in enumerate(pos):            
+            for j, p in enumerate(pos):
                 eto_NOUN = False
                 bad_par = False
                 if p == 'PRTF' and (j == 0 or pos[j - 1] != 'CONJ'):
-                    choice_list[j] = '[MASK] '+ choice_list[j]
+                    choice_list[j] = '[MASK] ' + choice_list[j]
                 if p == 'VERB':
                     for iii in range(j + 1, min(len(pos), j + 12)):
                         if pos[iii] == 'NOUN':
@@ -75,10 +78,10 @@ class Bert_punctuation:
                             if eto_NOUN:
                                 break
                         if pos[iii] == 'VERB' and pos[iii - 1] != 'CONJ':
-                            choice_list[iii] = '[MASK] '+ choice_list[iii]
+                            choice_list[iii] = '[MASK] ' + choice_list[iii]
                 if p == 'INFN':
                     for iii in range(j + 1, min(len(pos), j + 5)):
-                        if pos[iii] =='INFN' and pos[iii - 1] != 'CONJ':
+                        if pos[iii] == 'INFN' and pos[iii - 1] != 'CONJ':
                             choice_list[j] = choice_list[j] + ' [MASK]'
                 if p == 'ADVB':
                     for iii in range(j + 1, min(len(pos), j + 3)):
@@ -103,32 +106,39 @@ class Bert_punctuation:
                                 for all_cases_z in all_cases[ii]:
                                     if all_cases_z.tag.POS == 'ADJF' or all_cases_j.tag.POS == 'ADJF':
                                         NOUN_est_ADJF = True
-                                    if (all_cases_j.tag.case == all_cases_z.tag.case) and (choice_list[j] != 'свет' or choice_list[ii] != 'заря'):
+                                    if (all_cases_j.tag.case == all_cases_z.tag.case) and (choice_list[j] != 'свет' or
+                                                                                           choice_list[ii] != 'заря'):
                                         odnorod = True
                             if odnorod:
                                 if not NOUN_est_ADJF:
                                     choice_list[j] = choice_list[j] + ' [MASK]'
-                                break    
+                                break
 
-                        if (pos[ii] !='NOUN' and pos[ii] !='ADJF' and pos[ii] !='PREP' and pos[ii] !='PRCL'):
+                        if (pos[ii] != 'NOUN' and pos[ii] != 'ADJF' and pos[ii] != 'PREP' and pos[ii] != 'PRCL'):
                             break
-                if ((p == 'CONJ' or choice_list[j] == 'да' or choice_list[j] == 'ни') and j > 0 and pos[j - 1] != 'CONJ'):
+                if ((p == 'CONJ' or choice_list[j] == 'да' or choice_list[j] == 'ни')
+                        and j > 0 and pos[j - 1] != 'CONJ'):
                     if choice_list[j] == 'то' and choice_list[j - 1] == 'не':
-                            choice_list[j - 1] = '[MASK] ' + choice_list[j - 1]
-                    elif choice_list[j] != 'ни' or (choice_list[j] == 'ни' and (j == 0 or choice_list[j - 1] != 'свет') and (j == len(pos) or choice_list[j + 1] != 'свет')):
+                        choice_list[j - 1] = '[MASK] ' + choice_list[j - 1]
+                    elif choice_list[j] != 'ни' or (choice_list[j] == 'ни' and (j == 0 or choice_list[j - 1] != 'свет')
+                                                    and (j == len(pos) or choice_list[j + 1] != 'свет')):
                         for pb in par_b:
-                            if (j != 0 and choice_list[j - 1] == pb[0]) and (j != len(pos) and choice_list[j + 1] == pb[1]):
+                            if (j != 0 and choice_list[j - 1] == pb[0]) and (j != len(pos)
+                                                                             and choice_list[j + 1] == pb[1]):
                                 bad_par = True
                         if j == 1 and choice_list[j] == 'и':
                             bad_par = True
                         if choice_list[j] == 'ни' and (j != len(pos) or choice_list[j + 1] == 'то'):
-                            bad_par = True                       
-                        if not bad_par:  
+                            bad_par = True
+                        if not bad_par:
                             choice_list[j] = '[MASK] ' + choice_list[j]
-            words = ' '.join(choice_list).replace(' ,',',').replace(' .','.').replace(' !','!').replace(' ?','?').replace(' :',':').replace(' ;',';').replace(' »','»').replace('« ','«')
-            words = words.replace('[MASK] [MASK]','[MASK]').replace('[MASK] [MASK]','[MASK]')
+            words = (' '.join(choice_list).replace(' ,', ',').replace(' .', '.')
+                     .replace(' !', '!').replace(' ?', '?')
+                     .replace(' :', ':').replace(' ;', ';')
+                     .replace(' »', '»').replace('« ', '«'))
+            words = words.replace('[MASK] [MASK]', '[MASK]').replace('[MASK] [MASK]', '[MASK]')
             if words.startswith('[MASK] '):
-                words = words.replace('[MASK] ','',1)
+                words = words.replace('[MASK] ', '', 1)
             result = self.what_mask(words)
             if result:
                 for i in range(1, max(result) + 1):

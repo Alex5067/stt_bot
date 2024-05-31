@@ -1,4 +1,4 @@
-from bert_punctuation import Bert_punctuation
+from bert import Bert_punctuation
 
 Bert_punctuation = Bert_punctuation()
 
