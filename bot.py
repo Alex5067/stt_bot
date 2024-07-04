@@ -1,24 +1,29 @@
+import datetime
+import asyncio
+import logging
+from aiogram import Bot, Dispatcher, F
+from aiogram.filters import CommandStart, StateFilter, Command
+from aiogram import types
 from bert.bert import Bert_punctuation
-from aiogram import Bot, Dispatcher, executor, types
+from stt import STT
 import os
 from pathlib import Path
-import logging
-from stt import STT
+from dotenv import load_dotenv
 
-API_TOKEN = "YOUR_TOKEN"
+load_dotenv()
 
-logging.basicConfig(level=logging.INFO)
+API_TOKEN = os.getenv("TOKEN")
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher()
 stt = STT()
 Bert_punctuation = Bert_punctuation(model_file="bert/bert_punctuation.tar.gz",
                                     vocab_file="bert/vocab.txt")
 
-@dp.message_handler(commands=['start', 'help'])
+@dp.message(Command('start'))
 async def send_welcome(message: types.Message):
     await message.reply("Привет!\nОтправь аудиосообщение,\nчтобы получить текст.")
 
-@dp.message_handler(content_types=[types.ContentType.VOICE, types.ContentType.AUDIO, types.ContentType.DOCUMENT])
+@dp.message(F.document)
 async def audio_handler(message: types.Message):
     if message.content_type == types.ContentType.VOICE:
         file_id = message.voice.file_id
@@ -45,5 +50,14 @@ async def audio_handler(message: types.Message):
     os.remove(f_disk)
     await message.reply("Done")
 
+async def main() -> None:
+    print("Start", datetime.datetime.now())
+    #await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot)
+    print("Shutdown", datetime.datetime.now())
+
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    # Логирование
+    logging.basicConfig(level=logging.INFO, filename="log.log", filemode="w",
+                        format="%(asctime)s %(levelname)s %(message)s")
+    asyncio.run(main())
