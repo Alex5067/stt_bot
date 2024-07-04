@@ -1,0 +1,13 @@
+version: "3"
+
+services:
+  bot:
+    image: stt_bot:latest
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    container_name: stt_bot
+    volumes:
+      - "/codebase:/codebase"
+      - "/storage:/storage"
+    restart: always
