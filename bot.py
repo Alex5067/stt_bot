@@ -23,7 +23,7 @@ Bert_punctuation = Bert_punctuation(model_file="bert/bert_punctuation.tar.gz",
 async def send_welcome(message: types.Message):
     await message.reply("Привет!\nОтправь аудиосообщение,\nчтобы получить текст.")
 
-@dp.message(F.document)
+@dp.message()
 async def audio_handler(message: types.Message):
     if message.content_type == types.ContentType.VOICE:
         file_id = message.voice.file_id

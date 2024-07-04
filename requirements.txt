@@ -3,3 +3,4 @@ pytorch_pretrained_bert==0.6.2
 torch>=1.1.0
 vosk==0.3.45
 aiogram==3.8.0
+python-dotenv==1.0.1
